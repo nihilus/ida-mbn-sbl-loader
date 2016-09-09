@@ -100,26 +100,26 @@ static void add_segment(ea_t start, ea_t end, const char *name, const char *clas
 //------------------------------------------------------------------------
 static mbn_hdr hdr;
 static sbl_hdr shdr;
-int accept_file(linput_t *li, char fileformatname[MAX_FILE_FORMAT_NAME], int n)
+int  idaapi accept_file(linput_t * file, char fileformatname[MAX_FILE_FORMAT_NAME], int n)
 {
 
 	if (n != 0)
 		return 0;
 
 	// quit if file is smaller than size of iNes header
-	if (qlsize(li) < sizeof(mbn_hdr))
+	if (qlsize(file) < sizeof(mbn_hdr))
 		return 0;
 
 	// set filepos to offset 0
 //	imglen = qlsize(li);
-	qlseek(li, 0, SEEK_SET);
+	qlseek(file, 0, SEEK_SET);
 
 	// read MBN header
-	if (qlread(li, &hdr, MBN_HDR_SIZE) != MBN_HDR_SIZE)
+	if (qlread(file, &hdr, MBN_HDR_SIZE) != MBN_HDR_SIZE)
 		return 0;
 
 	// read SBL header
-	if (qlread(li, &shdr, SBL_HDR_SIZE) != SBL_HDR_SIZE)
+	if (qlread(file, &shdr, SBL_HDR_SIZE) != SBL_HDR_SIZE)
 		return 0;
 
 	// this is the name of the file format which will be
@@ -142,7 +142,7 @@ int accept_file(linput_t *li, char fileformatname[MAX_FILE_FORMAT_NAME], int n)
 		//mbn_hdr(li, ex);
 		//lread(li, &mbn_hdr, sizeof(mbn));
 		lread4bytes(li, &ex.image_id, true);
-		lread4bytes(li, &ex.flash_parti_ver, true);
+		lread4bytes(li, &ex.header_part_ver, true);
 		lread4bytes(li, &ex.image_src, true);
 		lread4bytes(li, &ex.image_dest_ptr, true);
 		lread4bytes(li, &ex.image_size, true);
@@ -246,7 +246,7 @@ int accept_file(linput_t *li, char fileformatname[MAX_FILE_FORMAT_NAME], int n)
 			}
 			//read the program header from the input file
 				lread(li, &hdr, MBN_HDR_SIZE);
-				msg("Codeword:            : %08x\n", hdr.flash_parti_ver);
+				msg("Codeword:            : %08x\n", hdr.header_part_ver);
 				msg("Magic No.:           : %08x\n", hdr.image_id);
 				msg("Source Location:     : %08x\n", hdr.image_src);
 				msg("Destination Address: : %08x\n", hdr.image_dest_ptr);
