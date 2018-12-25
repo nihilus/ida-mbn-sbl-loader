@@ -82,7 +82,7 @@ static void add_sub(unsigned int addr, const char *name, unsigned int max)
 {
 	if (!((addr >= 0x200) && (addr < max))) return;
 
-	ea_t e_addr = toEA(ask_selector(0), addr);
+	ea_t e_addr = to_ea(sel2para(0), addr);
 	auto_make_proc(e_addr);
 	set_name(e_addr, name);
 }
@@ -93,19 +93,15 @@ static void add_segment(ea_t start, ea_t end, const char *name, const char *clas
 	if (!add_segm(0, start, end, name, class_name)) loader_failure();
 	segment_t *segm = getseg(start);
 	set_segment_cmt(segm, cmnt, false);
-	doByte(start, 1);
+	create_byte(start, 1);
 }
 //------------------------------------------------------------------------
 
 //------------------------------------------------------------------------
 static mbn_hdr hdr;
 static sbl_hdr shdr;
-int  idaapi accept_file(linput_t * file, char fileformatname[MAX_FILE_FORMAT_NAME], int n)
+int idaapi accept_file(qstring *fileformatname, qstring *processor, linput_t *file, const char *filename)
 {
-
-	if (n != 0)
-		return 0;
-
 	// quit if file is smaller than size of iNes header
 	if (qlsize(file) < sizeof(mbn_hdr))
 		return 0;
@@ -124,13 +120,13 @@ int  idaapi accept_file(linput_t * file, char fileformatname[MAX_FILE_FORMAT_NAM
 
 	// this is the name of the file format which will be
 	// displayed in IDA's dialog
-	qstrncpy(fileformatname, "QCOM Bootloader", MAX_FILE_FORMAT_NAME);
+	*fileformatname = "QCOM Bootloader";
 
 	// set processor to ARM
 	if (ph.id != PLFM_6502)
 	{
 		msg("QCOM Bootloader detected: setting processor type to ARM.\n");
-		set_processor_type("ARM", SETPROC_ALL);
+		set_processor_type("ARM", SETPROC_LOADER);
 	}
 
 	return (1 | ACCEPT_FIRST);
@@ -152,7 +148,7 @@ int  idaapi accept_file(linput_t * file, char fileformatname[MAX_FILE_FORMAT_NAM
 		lread4bytes(li, &ex.cert_chain_ptr, true);
 		lread4bytes(li, &ex.cert_chain_size, true);
 
-		set_processor_type("arm", SETPROC_ALL | SETPROC_FATAL);
+		set_processor_type("arm", SETPROC_LOADER);
 	}
 	//--------------------------------------------------------------------------
 	void sblhdr(linput_t *li, sbl &ex)
@@ -171,7 +167,7 @@ int  idaapi accept_file(linput_t * file, char fileformatname[MAX_FILE_FORMAT_NAM
 		lread4bytes(li, &ex.signature_size, true);
 		lread4bytes(li, &ex.cert_chain_ptr, true);
 		lread4bytes(li, &ex.cert_chain_size, true);
-		set_processor_type("arm", SETPROC_ALL | SETPROC_FATAL);
+		set_processor_type("arm", SETPROC_LOADER);
 	}
 
 	//--------------------------------------------------------------------------
@@ -188,7 +184,7 @@ int  idaapi accept_file(linput_t * file, char fileformatname[MAX_FILE_FORMAT_NAM
 			//  1 - Yes
 			//  0 - No
 			// -1 - Cancel
-			int answer = askyn_cv(1,
+			int answer = ask_yn(1,
 				"MBN/SBL loader by Surge1223.\n\n"
 				"The partition may have a different start address if SBL1.\n"
 				"Choose \"Yes\" to load the SBL1 type,\n"
@@ -288,7 +284,7 @@ int  idaapi accept_file(linput_t * file, char fileformatname[MAX_FILE_FORMAT_NAM
 		//
 		static void define_item(ushort address, asize_t size, char *shortdesc, char *comment)
 		{
-			do_unknown(address, true);
+			del_items(address, DELIT_EXPAND);
 			set_name(address, shortdesc);
 			set_cmt(address, comment, true);
 		}
@@ -308,7 +304,7 @@ int  idaapi accept_file(linput_t * file, char fileformatname[MAX_FILE_FORMAT_NAM
 			segment_t *s = get_segm_by_name(BOOT_SEGMENT);
 			if (!s) return 0;
 
-			base2file(file, 0, s->startEA, s->endEA);
+			base2file(file, 0, s->start_ea, s->end_ea);
 			return 1;
 		}
 
@@ -325,9 +321,9 @@ int  idaapi accept_file(linput_t * file, char fileformatname[MAX_FILE_FORMAT_NAM
 		//
 		static void name_vector(ushort address, const char *name)
 		{
-			do_unknown(address, true);
-			do_data_ex(address, wordflag(), 2, BADNODE);
-			set_offset(address, 0, 0);
+			del_items(address, DELIT_EXPAND);
+			create_data(address, word_flag(), 2, BADNODE);
+			op_plain_offset(address, 0, 0);
 			set_name(address, name);
 		}
 
