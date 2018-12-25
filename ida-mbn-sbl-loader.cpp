@@ -8,8 +8,8 @@
 # to unpack from
 */
 
-#include <..\ldr\idaldr.h>
-#include <windows.h>
+#include "../idaldr.h"
+//#include <windows.h>
 #include <vector>
 #include "mbn.h"
 
